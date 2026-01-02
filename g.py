@@ -9,8 +9,7 @@ from collections import defaultdict
 POSTS_DIR = 'posts'
 DIST_DIR = 'dist'
 
-html_head = """
-<!DOCTYPE html>
+html_head = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -20,7 +19,7 @@ html_head = """
 <body>
     <div class="glow-cursor" id="glowCursor"></div>
     <nav class="shiro-nav">
-        <a href="#" class="nav-brand">MyBlog<span>.</span></a>
+        <a href="#" class="nav-brand">iamzhz<span>.</span></a>
         
         <div style="position: relative;">
             <div class="nav-highlight" id="navHighlight"></div>
@@ -36,7 +35,7 @@ html_head = """
     
     <main class="main-container">
         <div class="content-area">
-""" # 省略重复部分，确保 .format(title) 能注入
+"""
 html_tail = """
         </div>
     </main>
@@ -59,55 +58,53 @@ def get_file_content(filename: str) -> str:
         print(f"Cannot open file `{filename}`! Error: {e}")
         return ""
 
-def process_single_post(filename: str):
-    """处理单篇 Markdown，返回其元数据和生成的 HTML 文件名"""
+def process_single_post(full_path: str):
     md = markdown.Markdown(extensions=[
         'tables', 'meta', 'fenced_code', 'toc',
         CodeHiliteExtension(linenums=True)
     ])
     
-    content = get_file_content(os.path.join(POSTS_DIR, filename))
+    # 1. 读取内容
+    content = get_file_content(full_path)
     if not content: return None
-
     body_html = md.convert(content)
     
-    # 提取元数据
+    # 2. 提取文件名 (例如从 'posts/tech/python.md' 提取出 'python')
+    base_name = os.path.basename(full_path) # python.md
+    file_slug = base_name.replace('.md', '') # python
+    output_filename = file_slug + '.html'    # python.html
+
+    # 3. 提取元数据
     meta = getattr(md, 'Meta', {})
-    
-    # 1. 标题逻辑：优先 meta > toc > 文件名
     title = meta.get('title', [None])[0]
     if not title:
-        title = md.toc_tokens[0]['name'] if md.toc_tokens else filename.replace('.md', '')
+        title = md.toc_tokens[0]['name'] if md.toc_tokens else file_slug
     
-    # 2. 日期逻辑：支持 2026 格式解析
     date_str = meta.get('date', ['2026-01-01'])[0]
     try:
         dt_obj = datetime.strptime(date_str, "%Y-%m-%d")
     except:
-        dt_obj = datetime.now() # 解析失败则用当前时间
+        dt_obj = datetime.now()
 
-    description = meta.get('description', ['暂无描述'])[0]
-    tags = meta.get('tags', []) # 这是一个列表
-
-    # 生成文章 HTML 页面
-    output_filename = filename.replace('.md', '.html')
-    format_args = ()
-    if filename == 'about.md':
-        format_args = (title, '', '', 'active')
-    else:
-        format_args = (title, 'active', '', '')
+    # 4. 生成 HTML
+    # 判断是否是 about 页面（假设 about.md 可能在任何目录下）
+    is_about = file_slug == 'about'
+    format_args = (title, '', '', 'active') if is_about else (title, 'active', '', '')
+    
     full_html = html_head.format(*format_args) + body_html + html_tail
     
+    # 5. 统一写入 dist 根目录
     with open(os.path.join(DIST_DIR, output_filename), 'w', encoding='utf-8') as f:
         f.write(full_html)
 
     return {
         'title': title,
         'date': dt_obj,
-        'description': description,
-        'tags': tags,
+        'description': meta.get('description', ['暂无描述'])[0],
+        'tags': meta.get('tags', []),
         'url': output_filename
     }
+
 
 def generate_index_and_tags(all_posts):
     """汇总生成 index.html 和 tags.html"""
@@ -148,20 +145,27 @@ def generate_index_and_tags(all_posts):
         f.write(html_head.format("标签汇总", '', 'active', '') + tags_body + html_tail)
 
 def build_all():
-    """扫描目录并执行构建"""
     if not os.path.exists(DIST_DIR):
         os.makedirs(DIST_DIR)
         
     posts_data = []
-    for file in os.listdir(POSTS_DIR):
-        if file.endswith('.md'):
-            print(f"Processing {file}...")
-            data = process_single_post(file)
-            if data:
-                posts_data.append(data)
+    # 递归遍历 posts 文件夹下的所有子文件夹
+    for root, dirs, files in os.walk(POSTS_DIR):
+        for file in files:
+            if file.endswith('.md'):
+                # 构造文件的完整路径供读取，例如 'posts/tech/python.md'
+                full_path = os.path.join(root, file)
+                print(f"正在处理: {full_path}")
+                
+                # 修改 process_single_post 使其接收完整路径
+                data = process_single_post(full_path)
+                if data:
+                    posts_data.append(data)
     
     generate_index_and_tags(posts_data)
-    print(f"\nDone! 总计生成 {len(posts_data)} 篇文章。")
+    print(f"\n构建完成! 共生成 {len(posts_data)} 篇文章。")
+
+
 
 if __name__ == "__main__":
     # 如果传了参数则处理单个，否则扫描全量
