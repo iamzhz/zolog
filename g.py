@@ -94,6 +94,9 @@ def process_single_post(full_path: str):
         # 解析失败则使用一个默认日期（例如 2026-01-01 00:00）
         dt_obj = datetime(2026, 1, 1, 0, 0, 0)
 
+    show_update_meta = meta.get('show-update', ['true'])[0].lower()
+    show_update = show_update_meta in ('true', '1', 'yes', 'on')
+
     # 4. 生成 HTML
     # 判断是否是 about 页面（假设 about.md 可能在任何目录下）
     is_about = file_slug == 'about'
@@ -111,7 +114,8 @@ def process_single_post(full_path: str):
         'description': meta.get('description', ['暂无描述'])[0],
         'tags': meta.get('tags', []),
         'url': output_filename,
-        'body_html': body_html   # <--- 新增这一行，保存完整正文HTML
+        'body_html': body_html,
+        'show_update': show_update
     }
 
 def generate_index_and_tags(all_posts):
@@ -154,7 +158,8 @@ def generate_index_and_tags(all_posts):
 
 def generate_rss(posts_data, site_url, site_title, site_description):
     """生成 RSS 2.0 格式的 feed.xml，包含全文内容，时间使用 UTC+8"""
-    posts_sorted = sorted(posts_data, key=lambda x: x['date'], reverse=True)
+    filtered_posts = [p for p in posts_data if p.get('show_update', True)]
+    posts_sorted = sorted(filtered_posts, key=lambda x: x['date'], reverse=True)
     posts_sorted = posts_sorted[:RSS_MAX_ITEMS]
     items_xml = ""
 

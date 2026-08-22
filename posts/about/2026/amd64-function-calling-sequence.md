@@ -1,6 +1,7 @@
 ---
 date: 2026-08-22 11:00
 description: System V AMD64 ABI 函数调用约定的翻译
+show-update: false
 ---
 # System V AMD64 ABI 函数调用约定
 

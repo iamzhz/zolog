@@ -1,6 +1,7 @@
 ---
 date: 2026-01-01
 description: 介绍一下而已
+show-update: false
 ---
 # 关于
 Hi, 我是一个人类
