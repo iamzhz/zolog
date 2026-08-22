@@ -1,5 +1,5 @@
 ---
-date: 2026-1-2
+date: 2026-01-02
 description: 利用泰勒展开实现了简单的 sin(x) 函数, 并讨论了正规标准库是如何实现 sin(x) 的
 tags: math
 tags: code

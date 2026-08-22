@@ -1,5 +1,5 @@
 ---
-date: 2026-8-21
+date: 2026-08-21
 description: 泛泛而谈
 tags: thoughts
 ---
