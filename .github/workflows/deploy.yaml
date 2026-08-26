@@ -30,7 +30,7 @@ jobs:
       - name: Generate HTML
         run: |
           mkdir -p dist
-          cp styles.css script.js dist/ 2>/dev/null || true
+          cp styles.css dist/ 2>/dev/null || true
           python g.py
 
       - name: Setup Pages

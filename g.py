@@ -24,12 +24,10 @@ html_head = """<!DOCTYPE html>
     <title>iamzhz | {}</title>
     <link rel="stylesheet" href="styles.css"></head>
 <body>
-    <div class="glow-cursor" id="glowCursor"></div>
     <nav class="shiro-nav">
         <a href="#" class="nav-brand">iamzhz<span>.</span></a>
         
         <div style="position: relative;">
-            <div class="nav-highlight" id="navHighlight"></div>
             <ul class="nav-links" id="navLinks">
                 <li><a href="index.html" class="{}">首页</a></li>
                 <li><a href="tags.html" class="{}">标签云</a></li>
@@ -52,7 +50,6 @@ html_tail = """
             <p>Powered by iamzhz</p>
         </div>
     </footer>
-    <script src="script.js"></script>
 </body>
 </html>
 """
