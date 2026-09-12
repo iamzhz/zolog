@@ -63,7 +63,7 @@
          id="tspan8"
          style="stroke-width:0.405122"
          x="38.766556"
-         y="54.249699">8n+16(%rbp)    内存参数 n 个八比特</tspan><tspan
+         y="54.249699">8n+16(%rbp)    内存参数 n 个八字节</tspan><tspan
          sodipodi:role="line"
          style="stroke-width:0.405122"
          x="38.766556"
@@ -73,7 +73,7 @@
          style="stroke-width:0.405122"
          x="38.766556"
          y="66.403374"
-         id="tspan10">16(%rbp)       内存参数 0 个八比特</tspan><tspan
+         id="tspan10">16(%rbp)       内存参数 0 个八字节</tspan><tspan
          sodipodi:role="line"
          style="stroke-width:0.405122"
          x="38.766556"
