@@ -9,9 +9,10 @@ tags: glibc
 ---
 ## 泰勒展开
 根据泰勒展开, 我们都知道: 
-<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>sin</mi><mo data-mjx-texclass="NONE">⁡</mo><mi>x</mi><mo>=</mo><mi>x</mi><mo>−</mo><mfrac><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mrow><mn>3</mn><mo>!</mo></mrow></mfrac><mo>+</mo><mfrac><msup><mi>x</mi><mrow><mn>5</mn></mrow></msup><mrow><mn>5</mn><mo>!</mo></mrow></mfrac><mo>−</mo><mfrac><msup><mi>x</mi><mrow><mn>7</mn></mrow></msup><mrow><mn>7</mn><mo>!</mo></mrow></mfrac><mo>+</mo><mo>⋯</mo><mo>+</mo><mfrac><mrow><mo stretchy="false">(</mo><mo>−</mo><mn>1</mn><msup><mo stretchy="false">)</mo><mrow><mi>n</mi></mrow></msup><msup><mi>x</mi><mrow><mn>2</mn><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msup></mrow><mrow><mo stretchy="false">(</mo><mn>2</mn><mi>n</mi><mo>+</mo><mn>1</mn><mo stretchy="false">)</mo><mo>!</mo></mrow></mfrac><mo>+</mo><mo>…</mo></math>
+\\[\sin x = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \frac{x^7}{7!} + \cdots + \frac{(-1)^n x^{2n+1}}{(2n+1)!} + \cdots\\]  
+
 只取前几项的话
-<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mi>x</mi><mo>−</mo><mfrac><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mn>6</mn></mfrac><mo>+</mo><mfrac><msup><mi>x</mi><mrow><mn>5</mn></mrow></msup><mn>120</mn></mfrac></math>
+\\[f(x)=x-\frac{x^3}{6}+\frac{x^5}{120}\\]  
 发现 f(x) 从 [0, π/2] 的值和 sin(x) 的值差的[也不是很多](https://www.desmos.com/calculator/7lowczhumd)嘛~(我的要求没那么高):  
 <iframe src="https://www.desmos.com/calculator/7lowczhumd?embed" width="250" height="250" style="border: 1px solid #ccc" frameborder=0></iframe>  
 就很好办辣~

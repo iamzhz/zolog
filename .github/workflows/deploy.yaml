@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install markdown pygments natsort python-dateutil
+          pip install markdown pygments natsort python-dateutil pymdown-extensions
 
       - name: Generate HTML
         run: |

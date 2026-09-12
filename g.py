@@ -4,6 +4,7 @@ import markdown
 import shutil
 from datetime import datetime
 from markdown.extensions.codehilite import CodeHiliteExtension
+from pymdownx.arithmatex import ArithmatexExtension
 from collections import defaultdict
 from xml.sax.saxutils import escape
 from dateutil import parser
@@ -24,7 +25,12 @@ html_head = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iamzhz | {title}</title>
-    <link rel="stylesheet" href="{prefix}styles.css"></head>
+    <link rel="stylesheet" href="{prefix}styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.css" integrity="sha384-JctiRyLzXCrSoOOzFlSoWLdyzQl7OrrRnhyeBmzB6ZWtcjccUyc8lCQJqIbs3uQX" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/katex.min.js" integrity="sha384-+7Keh381hSkXmXqnjC0JBM/kzsN6TFj+wMKychSLjTvJ8/0ElMde2uKl8i6p6Buj" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.18.7/dist/contrib/auto-render.min.js" integrity="sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz" crossorigin="anonymous"
+        onload="renderMathInElement(document.body);"></script>
+    </head>
 <body>
     <nav class="shiro-nav">
         <a href="{prefix}index.html" class="nav-brand">iamzhz<span>.</span></a>
@@ -46,7 +52,6 @@ html_head = """<!DOCTYPE html>
 html_tail = """
         </div>
     </main>
-    
     <footer class="site-footer">
         <div class="footer-content">
             <p>Powered by iamzhz</p>
@@ -89,7 +94,8 @@ def rel_url_to_fs_path(rel_url: str) -> str:
 def process_single_post(full_path: str):
     md = markdown.Markdown(extensions=[
         'tables', 'meta', 'fenced_code', 'toc',
-        CodeHiliteExtension(linenums=True)
+        CodeHiliteExtension(linenums=True),
+        ArithmatexExtension(generic=True),
     ])
 
     # 1. 读取内容
@@ -127,11 +133,10 @@ def process_single_post(full_path: str):
     show_update = show_update_meta in ('true', '1', 'yes', 'on')
 
     # 4. 生成 HTML
-    is_about = file_slug == 'about'
     full_html = render_page(
         title, body_html, prefix=prefix,
-        active_index=not is_about,
-        active_about=is_about,
+        active_index=False,
+        active_about=(file_slug == 'about'),
     )
 
     # 5. 按原目录结构写入 dist
