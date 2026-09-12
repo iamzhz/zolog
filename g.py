@@ -1,6 +1,7 @@
 import sys
 import os
 import markdown
+import shutil
 from datetime import datetime
 from markdown.extensions.codehilite import CodeHiliteExtension
 from collections import defaultdict
@@ -16,22 +17,23 @@ SITE_TITLE = "iamzhz zolog"
 SITE_DESCRIPTION = "iamzhz 的 blog"
 RSS_MAX_ITEMS = 10  # 最多输出的篇数
 
+# 注意：{prefix} 用于子目录页面回退到站点根目录（例如 "../"）
 html_head = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iamzhz | {}</title>
-    <link rel="stylesheet" href="styles.css"></head>
+    <title>iamzhz | {title}</title>
+    <link rel="stylesheet" href="{prefix}styles.css"></head>
 <body>
     <nav class="shiro-nav">
-        <a href="#" class="nav-brand">iamzhz<span>.</span></a>
+        <a href="{prefix}index.html" class="nav-brand">iamzhz<span>.</span></a>
         
         <div style="position: relative;">
             <ul class="nav-links" id="navLinks">
-                <li><a href="index.html" class="{}">首页</a></li>
-                <li><a href="tags.html" class="{}">标签云</a></li>
-                <li><a href="about.html" class="{}">关于</a></li>
+                <li><a href="{prefix}index.html" class="{index_cls}">首页</a></li>
+                <li><a href="{prefix}tags.html" class="{tags_cls}">标签云</a></li>
+                <li><a href="{prefix}about.html" class="{about_cls}">关于</a></li>
             </ul>
         </div>
         
@@ -54,6 +56,7 @@ html_tail = """
 </html>
 """
 
+
 def get_file_content(filename: str) -> str:
     try:
         with open(filename, 'r', encoding='utf-8') as f:
@@ -62,47 +65,80 @@ def get_file_content(filename: str) -> str:
         print(f"Cannot open file `{filename}`! Error: {e}")
         return ""
 
+
+def render_page(title: str, body_html: str, prefix: str = "",
+                active_index: bool = False,
+                active_tags: bool = False,
+                active_about: bool = False) -> str:
+    """统一拼装页面，prefix 为回到 dist 根目录的相对路径（如 ''、'../'、'../../'）。"""
+    head = html_head.format(
+        title=title,
+        prefix=prefix,
+        index_cls="active" if active_index else "",
+        tags_cls="active" if active_tags else "",
+        about_cls="active" if active_about else "",
+    )
+    return head + body_html + html_tail
+
+
+def rel_url_to_fs_path(rel_url: str) -> str:
+    """把形如 'tech/python.html' 的相对 URL 转成当前系统下的文件路径。"""
+    return os.path.join(DIST_DIR, *rel_url.split('/'))
+
+
 def process_single_post(full_path: str):
     md = markdown.Markdown(extensions=[
         'tables', 'meta', 'fenced_code', 'toc',
         CodeHiliteExtension(linenums=True)
     ])
-    
+
     # 1. 读取内容
     content = get_file_content(full_path)
-    if not content: return None
+    if not content:
+        return None
     body_html = md.convert(content)
-    
-    # 2. 提取文件名 (例如从 'posts/tech/python.md' 提取出 'python')
-    base_name = os.path.basename(full_path) # python.md
-    file_slug = base_name.replace('.md', '') # python
-    output_filename = file_slug + '.html'    # python.html
+
+    # 2. 计算输出路径：posts/tech/python.md -> tech/python.html
+    rel_path = os.path.relpath(full_path, POSTS_DIR).replace(os.sep, '/')
+    rel_dir = os.path.dirname(rel_path)                    # 'tech' 或 ''
+    base_name = os.path.basename(rel_path)                 # 'python.md'
+    file_slug = os.path.splitext(base_name)[0]             # 'python'
+
+    output_rel = f"{rel_dir}/{file_slug}.html" if rel_dir else f"{file_slug}.html"
+    output_path = rel_url_to_fs_path(output_rel)
+
+    # 子目录页面需要 ../ 回退到 dist 根目录
+    depth = len([p for p in rel_dir.split('/') if p]) if rel_dir else 0
+    prefix = '../' * depth
 
     # 3. 提取元数据
     meta = getattr(md, 'Meta', {})
     title = meta.get('title', [None])[0]
     if not title:
         title = md.toc_tokens[0]['name'] if md.toc_tokens else file_slug
-    
+
     date_str = meta.get('date', ['2026-01-01'])[0]
     try:
         dt_obj = parser.parse(date_str)
-    except:
-        # 解析失败则使用一个默认日期（例如 2026-01-01 00:00）
+    except Exception:
         dt_obj = datetime(2026, 1, 1, 0, 0, 0)
 
     show_update_meta = meta.get('show-update', ['true'])[0].lower()
     show_update = show_update_meta in ('true', '1', 'yes', 'on')
 
     # 4. 生成 HTML
-    # 判断是否是 about 页面（假设 about.md 可能在任何目录下）
     is_about = file_slug == 'about'
-    format_args = (title, '', '', 'active') if is_about else (title, 'active', '', '')
-    
-    full_html = html_head.format(*format_args) + body_html + html_tail
-    
-    # 5. 统一写入 dist 根目录
-    with open(os.path.join(DIST_DIR, output_filename), 'w', encoding='utf-8') as f:
+    full_html = render_page(
+        title, body_html, prefix=prefix,
+        active_index=not is_about,
+        active_about=is_about,
+    )
+
+    # 5. 按原目录结构写入 dist
+    out_dir = os.path.dirname(output_path)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
         f.write(full_html)
 
     return {
@@ -110,18 +146,18 @@ def process_single_post(full_path: str):
         'date': dt_obj,
         'description': meta.get('description', ['暂无描述'])[0],
         'tags': meta.get('tags', []),
-        'url': output_filename,
+        'url': output_rel,          # 相对 dist 根目录的 URL，始终用 '/'
         'body_html': body_html,
         'show_update': show_update
     }
 
+
 def generate_index_and_tags(all_posts):
-    """汇总生成 index.html 和 tags.html"""
-    
+    """汇总生成 index.html 和 tags.html（均在 dist 根目录，prefix 为空）"""
+
     # --- 1. 生成主页 (Index) ---
-    # 按日期降序排列
     all_posts.sort(key=lambda x: x['date'], reverse=True)
-    
+
     index_body = "<h1>最近更新</h1><div class='post-list'>"
     for post in all_posts:
         tag_spans = "".join([f"<span class='tag-mini'>{t}</span>" for t in post['tags']])
@@ -133,9 +169,9 @@ def generate_index_and_tags(all_posts):
         </article>
         """
     index_body += "</div>"
-    
+
     with open(os.path.join(DIST_DIR, 'index.html'), 'w', encoding='utf-8') as f:
-        f.write(html_head.format("首页", 'active', '', '') + index_body + html_tail)
+        f.write(render_page("首页", index_body, active_index=True))
 
     # --- 2. 生成标签页 (Tags) ---
     tag_map = defaultdict(list)
@@ -151,7 +187,8 @@ def generate_index_and_tags(all_posts):
         tags_body += "</ul></section>"
 
     with open(os.path.join(DIST_DIR, 'tags.html'), 'w', encoding='utf-8') as f:
-        f.write(html_head.format("标签汇总", '', 'active', '') + tags_body + html_tail)
+        f.write(render_page("标签汇总", tags_body, active_tags=True))
+
 
 def generate_rss(posts_data, site_url, site_title, site_description):
     """生成 RSS 2.0 格式的 feed.xml，包含全文内容，时间使用 UTC+8"""
@@ -163,9 +200,7 @@ def generate_rss(posts_data, site_url, site_title, site_description):
     for post in posts_sorted:
         link = f"{site_url.rstrip('/')}/{post['url']}"
 
-        # ----- 修改点1：发布时间使用北京时间（+0800）-----
-        # post['date'] 是一个 datetime 对象（不含时区），其时间部分为 00:00:00
-        # 我们直接把它当作北京时间，并格式化为 RFC 822 格式
+        # 发布时间使用北京时间（+0800）
         pub_date = post['date'].strftime("%a, %d %b %Y %H:%M:%S +0800")
 
         # 摘要（description）保留元数据描述
@@ -200,29 +235,36 @@ def generate_rss(posts_data, site_url, site_title, site_description):
         f.write(rss_xml)
     print(f"RSS feed 已生成（含全文，时间 UTC+8）：{feed_path}")
 
+
 def build_all():
     if not os.path.exists(DIST_DIR):
         os.makedirs(DIST_DIR)
-        
+
     posts_data = []
     # 递归遍历 posts 文件夹下的所有子文件夹
     for root, dirs, files in os.walk(POSTS_DIR):
         for file in files:
+            full_path = os.path.join(root, file)
+            # 复制 SVG
+            if file.lower().endswith('.svg'):
+                rel_path = os.path.relpath(full_path, POSTS_DIR)
+                dest_path = os.path.join(DIST_DIR, rel_path)
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                shutil.copy2(full_path, dest_path)
+                print(f"已复制 SVG: {full_path} -> {dest_path}")
+                continue
+            # 处理 markdown
             if file.endswith('.md'):
-                # 构造文件的完整路径供读取，例如 'posts/tech/python.md'
-                full_path = os.path.join(root, file)
-                print(f"正在处理: {full_path}")
-                
-                # 修改 process_single_post 使其接收完整路径
                 data = process_single_post(full_path)
                 if data:
                     posts_data.append(data)
-    
+                print(f"已处理: {full_path}")
+
     generate_index_and_tags(posts_data)
     generate_rss(posts_data, SITE_URL, SITE_TITLE, SITE_DESCRIPTION)
     print(f"\n构建完成! 共生成 {len(posts_data)} 篇文章，并已生成 feed.xml。")
 
 
-
 if __name__ == "__main__":
     build_all()
+    shutil.copy2('styles.css', os.path.join(DIST_DIR, 'styles.css'))
