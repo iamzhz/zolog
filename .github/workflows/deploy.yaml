@@ -23,17 +23,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+      
+      - name: Clone from tiia
+        run: |
+          git clone https://github.com/iamzhz/tifia.git --depth 1
+          cp -rn ./tifia/* .
 
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: '3.15'
           cache: pip
-
-      - name: Clone from tifia
-        run: |
-          git clone https://github.com/iamzhz/tifia.git --depth 1
-          cp -rn ./tifia/* .
 
       - name: Install dependencies
         run: |
